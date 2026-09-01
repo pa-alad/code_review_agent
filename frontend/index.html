@@ -108,6 +108,31 @@
     a {
       color: var(--muted);
     }
+    .diff-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font: 12px monospace;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .legend-swatch.added { background: rgba(84, 196, 121, .28); }
+    .legend-swatch.removed { background: rgba(255, 117, 117, .28); }
+    .legend-swatch.changed { background: rgba(167, 139, 250, .28); }
     pre {
       overflow: auto;
       padding: 20px;
@@ -116,6 +141,31 @@
       color: #dbe7df;
       font: 13px/1.6 monospace;
       white-space: pre-wrap;
+    }
+    .diff-line {
+      display: block;
+      padding: 2px 8px;
+      margin: 0 -8px;
+      border-left: 3px solid transparent;
+    }
+    .diff-line.diff-added {
+      background: rgba(84, 196, 121, .12);
+      border-left-color: #4ade80;
+      color: #d8f7df;
+    }
+    .diff-line.diff-removed {
+      background: rgba(255, 117, 117, .12);
+      border-left-color: #f87171;
+      color: #ffd4d4;
+    }
+    .diff-line.diff-hunk,
+    .diff-line.diff-header {
+      background: rgba(167, 139, 250, .09);
+      border-left-color: #a78bfa;
+      color: #ddd6fe;
+    }
+    .diff-line.diff-context {
+      color: #dbe7df;
     }
     .error { color: var(--danger); }
     @media (max-width: 800px) {
@@ -164,6 +214,11 @@
     <h2>Findings</h2>
     <div id="findings"></div>
     <h2>Proposed diff</h2>
+    <div class="diff-legend" aria-label="Diff legend">
+      <span class="legend-item"><span class="legend-swatch added"></span> Added</span>
+      <span class="legend-item"><span class="legend-swatch removed"></span> Removed</span>
+      <span class="legend-item"><span class="legend-swatch changed"></span> Changed</span>
+    </div>
     <pre id="diff"></pre>
   </section>
 </main>
@@ -171,6 +226,30 @@
 const form = document.querySelector('#review-form');
 const status = document.querySelector('#status');
 const results = document.querySelector('#results');
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderDiff(rawDiff) {
+  const lines = (rawDiff || 'No proposed changes.').split('\n');
+  const html = lines
+    .map((line) => {
+      const content = line.length ? escapeHtml(line) : '&nbsp;';
+      if (line.startsWith('@@')) return `<span class="diff-line diff-hunk">${content}</span>`;
+      if (line.startsWith('--- ') || line.startsWith('+++ ')) return `<span class="diff-line diff-header">${content}</span>`;
+      if (line.startsWith('+')) return `<span class="diff-line diff-added">${content}</span>`;
+      if (line.startsWith('-')) return `<span class="diff-line diff-removed">${content}</span>`;
+      return `<span class="diff-line diff-context">${content}</span>`;
+    })
+    .join('');
+  document.querySelector('#diff').innerHTML = html;
+}
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -195,7 +274,7 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#meta').textContent =
       `${data.repository} @ ${data.revision} | ${data.findings.length} ` +
       `finding(s) | ${data.skipped_files.length} skipped file(s)`;
-    document.querySelector('#diff').textContent = data.diff || 'No proposed changes.';
+    renderDiff(data.diff);
     document.querySelector('#findings').innerHTML = data.findings.length
       ? data.findings
           .map(
