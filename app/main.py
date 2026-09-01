@@ -28,7 +28,15 @@ async def create_review(request: ReviewRequest) -> ReviewResponse:
         finally:
             await client.aclose()
         findings, lens_skipped = run_review(files, request.lens)
-        return ReviewResponse(repository=f"{target.owner}/{target.repository}", revision=revision, lens=request.lens, findings=response_findings(findings), skipped_files=sorted(set(fetch_skipped + lens_skipped)), diff=build_diff(files, findings), warnings=[])
+        return ReviewResponse(
+            repository=f"{target.owner}/{target.repository}",
+            revision=revision,
+            lens=request.lens,
+            findings=response_findings(findings),
+            skipped_files=sorted(set(fetch_skipped + lens_skipped)),
+            diff=build_diff(files, findings),
+            warnings=[],
+        )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except GitHubError as error:

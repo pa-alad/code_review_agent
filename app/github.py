@@ -43,7 +43,11 @@ class GitHubClient:
             headers["Authorization"] = f"Bearer {token}"
         self._client = client or httpx.AsyncClient(headers=headers, timeout=30)
 
-    async def fetch_snapshot(self, target: GitHubTarget, override: Optional[str]) -> tuple[str, list[FileSnapshot], list[str]]:
+    async def fetch_snapshot(
+        self,
+        target: GitHubTarget,
+        override: Optional[str],
+    ) -> tuple[str, list[FileSnapshot], list[str]]:
         base = f"https://api.github.com/repos/{target.owner}/{target.repository}"
         metadata = await self._get(base)
         revision = override or target.revision or metadata["default_branch"]

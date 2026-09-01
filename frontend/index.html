@@ -5,38 +5,222 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Code Review Agent</title>
   <style>
-    :root { color-scheme: dark; --ink: #edf4f0; --muted: #9aaba5; --bg: #101817; --panel: #182522; --line: #2a3a35; --accent: #d3f36b; --danger: #ff9c82; }
-    * { box-sizing: border-box; } body { margin: 0; background: radial-gradient(circle at top right, #27463b 0, var(--bg) 40%); color: var(--ink); font: 16px/1.5 Georgia, serif; }
-    main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 72px; } .eyebrow { color: var(--accent); letter-spacing: .12em; text-transform: uppercase; font: 12px/1.2 monospace; }
-    h1 { max-width: 720px; margin: 10px 0 14px; font-size: clamp(2.8rem, 7vw, 6.5rem); line-height: .92; font-weight: 400; } .intro { max-width: 620px; color: var(--muted); font-size: 1.1rem; }
-    form, section { border-top: 1px solid var(--line); margin-top: 38px; padding-top: 24px; } .controls { display: grid; grid-template-columns: 1fr 220px 220px auto; gap: 12px; align-items: end; } label { display: grid; gap: 7px; color: var(--muted); font: 12px monospace; text-transform: uppercase; }
-    input, select, button { min-height: 46px; border: 1px solid var(--line); border-radius: 3px; padding: 0 13px; background: var(--panel); color: var(--ink); font: 15px Georgia, serif; } button { cursor: pointer; background: var(--accent); color: #172014; border: 0; font-weight: bold; } button:disabled { opacity: .6; cursor: wait; }
-    .meta { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font: 13px monospace; } .finding { border-bottom: 1px solid var(--line); padding: 18px 0; } .finding strong { color: var(--accent); font-family: monospace; } .finding p { margin: 5px 0; } .finding small, a { color: var(--muted); } pre { overflow: auto; padding: 20px; background: #0b100f; border: 1px solid var(--line); color: #dbe7df; font: 13px/1.6 monospace; white-space: pre-wrap; } .error { color: var(--danger); } @media (max-width: 800px) { main { width: min(100% - 24px, 680px); padding-top: 32px; } .controls { grid-template-columns: 1fr; } h1 { font-size: 3.8rem; } }
+    :root {
+      color-scheme: dark;
+      --ink: #edf4f0;
+      --muted: #9aaba5;
+      --bg: #101817;
+      --panel: #182522;
+      --line: #2a3a35;
+      --accent: #d3f36b;
+      --danger: #ff9c82;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top right, #27463b 0, var(--bg) 40%);
+      color: var(--ink);
+      font: 16px/1.5 Georgia, serif;
+    }
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font: 12px/1.2 monospace;
+    }
+    h1 {
+      max-width: 720px;
+      margin: 10px 0 14px;
+      font-size: clamp(2.8rem, 7vw, 6.5rem);
+      line-height: .92;
+      font-weight: 400;
+    }
+    .intro {
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    form,
+    section {
+      border-top: 1px solid var(--line);
+      margin-top: 38px;
+      padding-top: 24px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 220px 220px auto;
+      gap: 12px;
+      align-items: end;
+    }
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font: 12px monospace;
+      text-transform: uppercase;
+    }
+    input,
+    select,
+    button {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 0 13px;
+      background: var(--panel);
+      color: var(--ink);
+      font: 15px Georgia, serif;
+    }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: #172014;
+      border: 0;
+      font-weight: bold;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+    .meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font: 13px monospace;
+    }
+    .finding {
+      border-bottom: 1px solid var(--line);
+      padding: 18px 0;
+    }
+    .finding strong {
+      color: var(--accent);
+      font-family: monospace;
+    }
+    .finding p {
+      margin: 5px 0;
+    }
+    .finding small,
+    a {
+      color: var(--muted);
+    }
+    pre {
+      overflow: auto;
+      padding: 20px;
+      background: #0b100f;
+      border: 1px solid var(--line);
+      color: #dbe7df;
+      font: 13px/1.6 monospace;
+      white-space: pre-wrap;
+    }
+    .error { color: var(--danger); }
+    @media (max-width: 800px) {
+      main {
+        width: min(100% - 24px, 680px);
+        padding-top: 32px;
+      }
+      .controls { grid-template-columns: 1fr; }
+      h1 { font-size: 3.8rem; }
+    }
   </style>
 </head>
 <body>
 <main>
   <div class="eyebrow">Deterministic code review</div>
   <h1>Code Review Agent</h1>
-  <p class="intro">The code in the specified repository will be reviewed according to a selected software development best practice "lens".</p>
+  <p class="intro">
+    The code in the specified repository will be reviewed according to a selected
+    software development best practice "lens".
+  </p>
   <form id="review-form">
     <div class="controls">
-      <label>GitHub repository or file URL<input id="github_url" required placeholder="https://github.com/owner/repository" /></label>
-      <label>Branch or commit<input id="revision" placeholder="default branch" /></label>
-      <label>Review lens<select id="lens"><option value="clean-code">Clean Code</option><option value="solid">SOLID principles</option><option value="cpp-core-guidelines">C++ Core Guidelines</option><option value="sei-cert">SEI CERT Secure Coding</option></select></label>
+      <label>
+        GitHub repository or file URL
+        <input id="github_url" required placeholder="https://github.com/owner/repository" />
+      </label>
+      <label>
+        Branch or commit
+        <input id="revision" placeholder="default branch" />
+      </label>
+      <label>
+        Review lens
+        <select id="lens">
+          <option value="clean-code">Clean Code</option>
+          <option value="solid">SOLID principles</option>
+          <option value="cpp-core-guidelines">C++ Core Guidelines</option>
+          <option value="sei-cert">SEI CERT Secure Coding</option>
+        </select>
+      </label>
       <button type="submit">Review</button>
     </div>
   </form>
   <p id="status" class="meta"></p>
-  <section id="results" hidden><div id="meta" class="meta"></div><h2>Findings</h2><div id="findings"></div><h2>Proposed diff</h2><pre id="diff"></pre></section>
+  <section id="results" hidden>
+    <div id="meta" class="meta"></div>
+    <h2>Findings</h2>
+    <div id="findings"></div>
+    <h2>Proposed diff</h2>
+    <pre id="diff"></pre>
+  </section>
 </main>
 <script>
-const form = document.querySelector('#review-form'); const status = document.querySelector('#status'); const results = document.querySelector('#results');
-form.addEventListener('submit', async (event) => { event.preventDefault(); const button = form.querySelector('button'); button.disabled = true; status.textContent = 'Fetching snapshot and running checks...'; results.hidden = true;
-  try { const response = await fetch('/api/reviews', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({github_url: document.querySelector('#github_url').value, branch_or_commit: document.querySelector('#revision').value || null, lens: document.querySelector('#lens').value}) }); const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Review failed.');
-    document.querySelector('#meta').textContent = `${data.repository} @ ${data.revision} | ${data.findings.length} finding(s) | ${data.skipped_files.length} skipped file(s)`; document.querySelector('#diff').textContent = data.diff || 'No proposed changes.';
-    document.querySelector('#findings').innerHTML = data.findings.length ? data.findings.map(f => `<article class="finding"><strong>${f.rule_id} · ${f.severity}</strong><p>${f.path}:${f.line} — ${f.message}</p><small>${f.suggestion} · <a href="${f.references[0].url}" target="_blank" rel="noreferrer">source</a></small></article>`).join('') : '<p>No findings for this lens.</p>'; results.hidden = false; status.textContent = 'Review complete.';
-  } catch (error) { status.textContent = error.message; status.className = 'error'; } finally { button.disabled = false; }
+const form = document.querySelector('#review-form');
+const status = document.querySelector('#status');
+const results = document.querySelector('#results');
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = form.querySelector('button');
+  button.disabled = true;
+  status.textContent = 'Fetching snapshot and running checks...';
+  results.hidden = true;
+
+  try {
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        github_url: document.querySelector('#github_url').value,
+        branch_or_commit: document.querySelector('#revision').value || null,
+        lens: document.querySelector('#lens').value,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Review failed.');
+
+    document.querySelector('#meta').textContent =
+      `${data.repository} @ ${data.revision} | ${data.findings.length} ` +
+      `finding(s) | ${data.skipped_files.length} skipped file(s)`;
+    document.querySelector('#diff').textContent = data.diff || 'No proposed changes.';
+    document.querySelector('#findings').innerHTML = data.findings.length
+      ? data.findings
+          .map(
+            (f) =>
+              `<article class="finding">
+                <strong>${f.rule_id} · ${f.severity}</strong>
+                <p>${f.path}:${f.line} — ${f.message}</p>
+                <small>
+                  ${f.suggestion} ·
+                  <a href="${f.references[0].url}" target="_blank" rel="noreferrer">
+                    source
+                  </a>
+                </small>
+              </article>`
+          )
+          .join('')
+      : '<p>No findings for this lens.</p>';
+    results.hidden = false;
+    status.textContent = 'Review complete.';
+  } catch (error) {
+    status.textContent = error.message;
+    status.className = 'error';
+  } finally {
+    button.disabled = false;
+  }
 });
 </script>
 </body>

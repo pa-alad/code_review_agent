@@ -23,8 +23,19 @@ def build_diff(files: list[FileSnapshot], findings: list[ReviewFinding]) -> str:
             if finding.line <= len(updated):
                 prefix = _comment_prefix(file.language)
                 reference = finding.references[0].url
-                updated.insert(finding.line - 1, f"{prefix} Review {finding.rule_id}: {reference}")
-        chunks.extend(difflib.unified_diff(lines, updated, fromfile=f"a/{file.path}", tofile=f"b/{file.path}", lineterm=""))
+                updated.insert(
+                    finding.line - 1,
+                    f"{prefix} Review {finding.rule_id}: {reference}",
+                )
+        chunks.extend(
+            difflib.unified_diff(
+                lines,
+                updated,
+                fromfile=f"a/{file.path}",
+                tofile=f"b/{file.path}",
+                lineterm="",
+            )
+        )
     return "\n".join(chunks)
 
 
@@ -41,4 +52,15 @@ def run_review(files: list[FileSnapshot], lens_name: LensName) -> tuple[list[Rev
 
 
 def response_findings(findings: list[ReviewFinding]) -> list[FindingResponse]:
-    return [FindingResponse(rule_id=f.rule_id, severity=f.severity, path=f.path, line=f.line, message=f.message, suggestion=f.suggestion, references=list(f.references)) for f in findings]
+    return [
+        FindingResponse(
+            rule_id=f.rule_id,
+            severity=f.severity,
+            path=f.path,
+            line=f.line,
+            message=f.message,
+            suggestion=f.suggestion,
+            references=list(f.references),
+        )
+        for f in findings
+    ]
