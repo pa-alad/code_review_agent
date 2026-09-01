@@ -20,6 +20,16 @@ def build_diff(files: list[FileSnapshot], findings: list[ReviewFinding]) -> str:
         lines = file.content.splitlines()
         updated = lines[:]
         for finding in sorted(file_findings, key=lambda item: item.line, reverse=True):
+            if finding.replacement is not None:
+                replacement_lines = finding.replacement.splitlines()
+                index = finding.line - 1
+                if index < 0:
+                    index = 0
+                if index <= len(updated):
+                    updated[index : index + 1] = replacement_lines
+                else:
+                    updated.extend(replacement_lines)
+                continue
             if finding.line <= len(updated):
                 prefix = _comment_prefix(file.language)
                 reference = finding.references[0].url
