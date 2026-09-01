@@ -1,6 +1,8 @@
-# Lens Review
+# Code Review Agent
 
-Lens Review is a Dockerized FastAPI application that reviews GitHub snapshots with deterministic best-practice checks and presents a proposed unified diff.
+Code Review Agent is a Dockerised FastAPI application that reviews GitHub snapshots with deterministic best-practice checks and presents a proposed unified diff. 
+
+The code in the specified repository will be reviewed according to a selected software development best practice "lens".
 
 ## Run locally with Docker
 

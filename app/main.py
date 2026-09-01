@@ -9,7 +9,7 @@ from .models import ReviewRequest, ReviewResponse
 from .review import build_diff, response_findings, run_review
 
 
-app = FastAPI(title="Lens Review", version="0.1.0")
+app = FastAPI(title="Code Review Agent", version="0.1.0")
 FRONTEND = Path(__file__).parent.parent / "frontend"
 
 

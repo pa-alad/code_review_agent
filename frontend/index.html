@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lens Review</title>
+  <title>Code Review Agent</title>
   <style>
     :root { color-scheme: dark; --ink: #edf4f0; --muted: #9aaba5; --bg: #101817; --panel: #182522; --line: #2a3a35; --accent: #d3f36b; --danger: #ff9c82; }
     * { box-sizing: border-box; } body { margin: 0; background: radial-gradient(circle at top right, #27463b 0, var(--bg) 40%); color: var(--ink); font: 16px/1.5 Georgia, serif; }
@@ -17,8 +17,8 @@
 <body>
 <main>
   <div class="eyebrow">Deterministic code review</div>
-  <h1>See the code through a sharper lens.</h1>
-  <p class="intro">Point at a GitHub snapshot, choose a practice, and get traceable findings with a proposed diff.</p>
+  <h1>Code Review Agent</h1>
+  <p class="intro">The code in the specified repository will be reviewed according to a selected software development best practice "lens".</p>
   <form id="review-form">
     <div class="controls">
       <label>GitHub repository or file URL<input id="github_url" required placeholder="https://github.com/owner/repository" /></label>
