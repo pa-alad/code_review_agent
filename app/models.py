@@ -13,6 +13,8 @@ class ReviewRequest(BaseModel):
     github_url: str = Field(min_length=1)
     branch_or_commit: Optional[str] = None
     lens: LensName
+    ai_review: bool = False
+    allow_remote_ai: bool = False
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,8 @@ class ReviewFinding:
     suggestion: str
     replacement: Optional[str]
     references: tuple[SourceReference, ...]
+    source: str = "deterministic"
+    evidence: Optional[str] = None
 
 
 class FindingResponse(BaseModel):
@@ -48,6 +52,8 @@ class FindingResponse(BaseModel):
     message: str
     suggestion: str
     references: list[SourceReference]
+    source: str = "deterministic"
+    evidence: Optional[str] = None
 
 
 class ReviewResponse(BaseModel):

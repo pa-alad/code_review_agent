@@ -57,6 +57,32 @@
       gap: 12px;
       align-items: end;
     }
+    .ai-controls {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+      font: 14px/1.5 monospace;
+    }
+    .ai-controls label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: none;
+      font: inherit;
+    }
+    .ai-controls input[type="checkbox"] {
+      min-height: 18px;
+      width: 18px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+    .disclosure {
+      max-width: 850px;
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      background: rgba(211, 243, 107, .06);
+    }
     label {
       display: grid;
       gap: 7px;
@@ -180,7 +206,7 @@
 </head>
 <body>
 <main>
-  <div class="eyebrow">Deterministic code review</div>
+  <div class="eyebrow">Code review · deterministic + optional AI</div>
   <h1>Code Review Agent</h1>
   <p class="intro">
     The code in the specified repository will be reviewed according to a selected
@@ -207,10 +233,26 @@
       </label>
       <button type="submit">Review</button>
     </div>
+    <div class="ai-controls">
+      <label>
+        <input id="ai_review" type="checkbox" disabled />
+        <span id="ai-status">Checking AI provider configuration…</span>
+      </label>
+      <div id="remote-disclosure" class="disclosure" hidden>
+        AI review sends bounded repository source and project guidance to Google Gemini.
+        Use a free-tier-only API project: quotas apply, submitted content may be used to improve
+        Google products, and do not enable this for confidential code unless you accept those terms.
+        <label>
+          <input id="allow-remote-ai" type="checkbox" />
+          I understand and explicitly allow sending this repository context to Google.
+        </label>
+      </div>
+    </div>
   </form>
   <p id="status" class="meta"></p>
   <section id="results" hidden>
     <div id="meta" class="meta"></div>
+    <div id="warnings" class="error"></div>
     <h2>Findings</h2>
     <div id="findings"></div>
     <h2>Proposed diff</h2>
@@ -226,6 +268,10 @@
 const form = document.querySelector('#review-form');
 const status = document.querySelector('#status');
 const results = document.querySelector('#results');
+const aiReview = document.querySelector('#ai_review');
+const remoteDisclosure = document.querySelector('#remote-disclosure');
+const remoteConsent = document.querySelector('#allow-remote-ai');
+let aiProvider = { ai_available: false, remote: false, provider: 'none' };
 
 function escapeHtml(value) {
   return value
@@ -251,10 +297,34 @@ function renderDiff(rawDiff) {
   document.querySelector('#diff').innerHTML = html;
 }
 
+aiReview.addEventListener('change', () => {
+  remoteDisclosure.hidden = !aiReview.checked || !aiProvider.remote;
+  if (!aiReview.checked) remoteConsent.checked = false;
+});
+
+fetch('/api/config')
+  .then((response) => response.json())
+  .then((config) => {
+    aiProvider = config;
+    aiReview.disabled = !config.ai_available;
+    document.querySelector('#ai-status').textContent = config.ai_available
+      ? `Add advisory AI findings using ${config.provider} (${config.model}).`
+      : 'AI review unavailable: no provider configured.';
+  })
+  .catch(() => {
+    document.querySelector('#ai-status').textContent = 'AI provider status unavailable.';
+  });
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const button = form.querySelector('button');
+  if (aiReview.checked && aiProvider.remote && !remoteConsent.checked) {
+    status.className = 'error';
+    status.textContent = 'Confirm the remote AI data-sharing disclosure or turn off AI review.';
+    return;
+  }
   button.disabled = true;
+  status.className = 'meta';
   status.textContent = 'Fetching snapshot and running checks...';
   results.hidden = true;
 
@@ -266,6 +336,8 @@ form.addEventListener('submit', async (event) => {
         github_url: document.querySelector('#github_url').value,
         branch_or_commit: document.querySelector('#revision').value || null,
         lens: document.querySelector('#lens').value,
+        ai_review: aiReview.checked,
+        allow_remote_ai: aiProvider.remote && remoteConsent.checked,
       }),
     });
     const data = await response.json();
@@ -274,20 +346,17 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#meta').textContent =
       `${data.repository} @ ${data.revision} | ${data.findings.length} ` +
       `finding(s) | ${data.skipped_files.length} skipped file(s)`;
+    document.querySelector('#warnings').textContent = (data.warnings || []).join(' ');
     renderDiff(data.diff);
     document.querySelector('#findings').innerHTML = data.findings.length
       ? data.findings
           .map(
             (f) =>
               `<article class="finding">
-                <strong>${f.rule_id} · ${f.severity}</strong>
-                <p>${f.path}:${f.line} — ${f.message}</p>
-                <small>
-                  ${f.suggestion} ·
-                  <a href="${f.references[0].url}" target="_blank" rel="noreferrer">
-                    source
-                  </a>
-                </small>
+                <strong>${escapeHtml(f.rule_id)} · ${escapeHtml(f.severity)}${f.source === 'ai' ? ' · AI advisory' : ''}</strong>
+                <p>${escapeHtml(f.path)}:${f.line} — ${escapeHtml(f.message)}</p>
+                ${f.evidence ? `<small>Evidence: <code>${escapeHtml(f.evidence)}</code></small><br />` : ''}
+                <small>${escapeHtml(f.suggestion)}${f.references && f.references.length ? ` · <a href="${escapeHtml(f.references[0].url)}" target="_blank" rel="noreferrer">source</a>` : ''}</small>
               </article>`
           )
           .join('')

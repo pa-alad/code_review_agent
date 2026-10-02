@@ -20,6 +20,8 @@ def build_diff(files: list[FileSnapshot], findings: list[ReviewFinding]) -> str:
         lines = file.content.splitlines()
         updated = lines[:]
         for finding in sorted(file_findings, key=lambda item: item.line, reverse=True):
+            if finding.source == "ai":
+                continue
             if finding.replacement is not None:
                 replacement_lines = finding.replacement.splitlines()
                 index = finding.line - 1
@@ -71,6 +73,8 @@ def response_findings(findings: list[ReviewFinding]) -> list[FindingResponse]:
             message=f.message,
             suggestion=f.suggestion,
             references=list(f.references),
+            source=f.source,
+            evidence=f.evidence,
         )
         for f in findings
     ]

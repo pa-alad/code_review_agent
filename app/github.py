@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import base64
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -6,6 +7,15 @@ import httpx
 
 from .lenses import detect_language
 from .models import FileSnapshot
+
+
+GUIDANCE_PATHS = {"CONTRIBUTING.md", "README.md", ".github/copilot-instructions.md"}
+MAX_GUIDANCE_FILES = 6
+MAX_GUIDANCE_BYTES = 24_000
+
+
+def _is_guidance_path(path: str) -> bool:
+    return path in GUIDANCE_PATHS or path == "AGENTS.md" or path.endswith("/AGENTS.md")
 
 
 @dataclass(frozen=True)
@@ -47,7 +57,8 @@ class GitHubClient:
         self,
         target: GitHubTarget,
         override: Optional[str],
-    ) -> tuple[str, list[FileSnapshot], list[str]]:
+        include_guidance: bool = False,
+    ) -> tuple[str, list[FileSnapshot], list[str], dict[str, str]]:
         base = f"https://api.github.com/repos/{target.owner}/{target.repository}"
         metadata = await self._get(base)
         revision = override or target.revision or metadata["default_branch"]
@@ -55,6 +66,8 @@ class GitHubClient:
         tree = await self._get(f"{base}/git/trees/{commit['sha']}?recursive=1")
         snapshots = []
         skipped = []
+        guidance: dict[str, str] = {}
+        guidance_bytes = 0
         for item in tree.get("tree", []):
             path = item.get("path", "")
             language = detect_language(path)
@@ -64,13 +77,34 @@ class GitHubClient:
                 continue
             try:
                 blob = await self._get(f"{base}/contents/{path}?ref={commit['sha']}")
-                import base64
                 snapshots.append(FileSnapshot(path, base64.b64decode(blob["content"]).decode("utf-8"), language))
             except (UnicodeDecodeError, KeyError, GitHubError):
                 skipped.append(path)
+        guidance_paths = (
+            [
+                item.get("path", "")
+                for item in tree.get("tree", [])
+                if item.get("type") == "blob" and _is_guidance_path(item.get("path", ""))
+            ][:MAX_GUIDANCE_FILES]
+            if include_guidance
+            else []
+        )
+        for path in guidance_paths:
+            if guidance_bytes >= MAX_GUIDANCE_BYTES:
+                break
+            try:
+                blob = await self._get(f"{base}/contents/{path}?ref={commit['sha']}")
+                raw_content = base64.b64decode(blob["content"])
+                remaining = MAX_GUIDANCE_BYTES - guidance_bytes
+                raw_content = raw_content[:remaining]
+                content = raw_content.decode("utf-8", errors="ignore")
+                guidance[path] = content
+                guidance_bytes += len(raw_content)
+            except (UnicodeDecodeError, KeyError, GitHubError):
+                continue
         if target.path and not any(snapshot.path == target.path for snapshot in snapshots):
             raise GitHubError(f"File not found in revision {revision}: {target.path}")
-        return commit["sha"], snapshots, skipped
+        return commit["sha"], snapshots, skipped, guidance
 
     async def _get(self, url: str) -> dict:
         response = await self._client.get(url)
