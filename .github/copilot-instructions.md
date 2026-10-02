@@ -13,5 +13,5 @@
 - Include helpful comments for complex logic and explaining idomatic code if it's
   not immediately clear for a programmer unfamiliar with the language or tool
 - Add error handling for user inputs and API calls
-- Always write unit tests for code where possible and try to document the tested
-  code using the test code to show how it works and what it is doing
+- Use TDD (Test Driven Development) to write unit, integration and end-to-end tests for code where possible, and try to document the tested production
+  code using the test code to demonstrate how it is working and what it is doing
